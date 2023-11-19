@@ -70,7 +70,12 @@ class CountdownTimer:
             if self.remaining_seconds == 20 and self.initial_seconds == 75 :
                     tts_thread = threading.Thread(target=self.speak_timer_xiaohua)
                     tts_thread.start()
+            
+            if self.remaining_seconds == 20 and self.initial_seconds == 158 :
+                    tts_thread = threading.Thread(target=self.speak_timer_dici)
+                    tts_thread.start()
                     
+            
             if self.remaining_seconds <= 15:
                 self.time_label.config(fg="red")  # 改成红色
                 if self.remaining_seconds == 10:
@@ -99,6 +104,12 @@ class CountdownTimer:
         # Initialize TTS engine
         engine = pyttsx3.init()
         engine.say("二十秒后"+self.timer_name)
+        engine.runAndWait()
+    
+    def speak_timer_dici(self):
+        # Initialize TTS engine
+        engine = pyttsx3.init()
+        engine.say("二十秒后第刺")
         engine.runAndWait()
 
 
@@ -150,6 +161,8 @@ if __name__ == '__main__':
     #全部烧掉时禁锢小花都可以按了，最开始可以按镰刀，4分钟+冰冻延时差不多就好，第一次禁锢按蛋壳，第二次地刺后30秒回修地板，会因为控被延迟
     #修地板从持续17秒左右，结束按来得及
     #控的久可能先地刺再蛋壳
+    '''
+    #改键版本
     timer0 = CountdownTimer(root, "地刺", 158, 0, 0)
     timer1 = CountdownTimer(root, "冰冻", 90, 0, 1)
     timer2 = CountdownTimer(root, "小花", 75, 0, 2)
@@ -158,21 +171,35 @@ if __name__ == '__main__':
     timer5 = CountdownTimer(root, "蛋壳", 240, 0, 5)
     timer6 = CountdownTimer(root, "修地板", 300, 0, 6)
     timer7 = CountdownTimer(root, "延迟", 30, 0, 7)
+    keyboard.on_press_key('F1', on_f1_press)
+    keyboard.on_press_key('F2', on_f2_press)
+    keyboard.on_press_key(79, on_f3_press)
+    keyboard.on_press_key(81, on_f4_press)
+    keyboard.on_press_key(71, on_f5_press)
+    keyboard.on_press_key(73, on_f6_press)
+    keyboard.on_press_key(76, on_f7_press)
+    keyboard.on_press_key(78, on_f8_press)
+    '''
+    #非改键版本
+    timer0 = CountdownTimer(root, "地刺", 158, 0, 0)
+    timer1 = CountdownTimer(root, "冰冻", 90, 0, 1)
+    timer2 = CountdownTimer(root, "禁锢", 80, 0, 2)
+    timer3 = CountdownTimer(root, "小花", 75, 0, 3)
+    timer4 = CountdownTimer(root, "镰刀", 240, 0, 4)
+    timer5 = CountdownTimer(root, "蛋壳", 240, 0, 5)
+    timer6 = CountdownTimer(root, "修地板", 300, 0, 6)
+    timer7 = CountdownTimer(root, "延迟", 30, 0, 7)
+    keyboard.on_press_key('F1', on_f1_press)
+    keyboard.on_press_key('F2', on_f2_press)
+    keyboard.on_press_key('F3', on_f3_press)
+    keyboard.on_press_key('F4', on_f4_press)
+    keyboard.on_press_key('F5', on_f5_press)
+    keyboard.on_press_key('F6', on_f6_press)
+    keyboard.on_press_key('F7', on_f7_press)
+    keyboard.on_press_key('F8', on_f8_press)
     timers = [
         timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7
     ]
-    keyboard.on_press_key('F1', on_f1_press)
-    keyboard.on_press_key('F2', on_f2_press)
-    '''
-    keyboard.on_press_key('F3', on_f3_press)
-    keyboard.on_press_key('F4', on_f4_press)
-    '''
-    keyboard.on_press_key(79, on_f3_press)
-    keyboard.on_press_key(80, on_f4_press)
-    keyboard.on_press_key(71, on_f5_press)
-    keyboard.on_press_key(72, on_f6_press)
-    keyboard.on_press_key(73, on_f7_press)
-    keyboard.on_press_key(78, on_f8_press)
     #keyboard.on_press_key('F9', on_test_press)
 
 
