@@ -2,8 +2,33 @@ import tkinter as tk
 import keyboard 
 import pyttsx3
 import threading 
+from openpyxl import load_workbook
+import winsound
 
 font_size=10 
+file_path = '计时器配置表.xlsx' 
+workbook = load_workbook(file_path)
+sheet = workbook['Sheet1'] # 或者使用 workbook['Sheet1'] 获取特定的工作表
+
+num_to_symbol = {
+    '1': '!',
+    '2': '@',
+    '3': '#',
+    '4': '$',
+    '5': '%',
+    '6': '^',
+    '7': '&',
+    '8': '*',
+    '9': '(',
+    '0': ')',
+    "NUM1": 79,
+    "NUM3": 81,
+    "NUM5": 76,
+    "NUM7": 71,
+    "NUM9": 73,
+    "+":78,
+}
+numeric_string = "1234567890"
 
 def close_window():
     root.destroy()
@@ -24,7 +49,7 @@ def decrease_font_size():
         timer.update_font_size()
 
 class CountdownTimer:
-    def __init__(self, root, timer_name, initial_seconds, row, column):
+    def __init__(self, root, timer_name, initial_seconds, row, column, hotkey, flag_20, flag_10, flag_0):
         self.root = root
         self.timer_name = timer_name
         self.remaining_time = tk.StringVar()
@@ -40,6 +65,15 @@ class CountdownTimer:
         self.is_running = False
         self.timer_id = None
         self.engine = pyttsx3.init()
+        self.hotkey = hotkey 
+        if hotkey:  
+            self.bind_hotkey(hotkey)
+        self.flag_20 = flag_20
+        self.flag_10 = flag_10
+        self.flag_0 = flag_0
+        self.loop = 0
+        if timer_name == "超越栏":
+            self.loop = 1
 
     
     def reset_and_start(self):
@@ -67,20 +101,29 @@ class CountdownTimer:
             timeformat = '{:02d}:{:02d}'.format(mins, secs)
             self.remaining_time.set(f"{self.timer_name}: {timeformat}")
             
-            if self.remaining_seconds == 20 and self.initial_seconds == 75 :
-                    tts_thread = threading.Thread(target=self.speak_timer_xiaohua)
-                    tts_thread.start()
-            
-            if self.remaining_seconds == 20 and self.initial_seconds == 158 :
-                    tts_thread = threading.Thread(target=self.speak_timer_dici)
-                    tts_thread.start()
-                    
+            if self.remaining_seconds <= 20:
+                if self.remaining_seconds == 20 and self.flag_20 == 1:
+                        tts_thread = threading.Thread(target=self.speak_timer_name_20)
+                        tts_thread.start()
             
             if self.remaining_seconds <= 15:
                 self.time_label.config(fg="red")  # 改成红色
-                if self.remaining_seconds == 10:
-                    tts_thread = threading.Thread(target=self.speak_timer_name)
+                if self.remaining_seconds == 10 and self.flag_10 == 1:
+                    tts_thread = threading.Thread(target=self.speak_timer_name_10)
                     tts_thread.start()
+                
+                if self.loop == 1:
+                    if self.remaining_seconds == 3:
+                        tts_thread = threading.Thread(target=self.speak_timer_name_3)
+                        tts_thread.start()
+                
+                if self.remaining_seconds == 0:
+                    if self.loop == 1:
+                        self.remaining_seconds = self.initial_seconds
+                    elif self.flag_0 == 1:
+                        tts_thread = threading.Thread(target=self.speak_timer_name)
+                        tts_thread.start()
+                    
             else:
                 self.time_label.config(fg="black")  # 字体黑色
 
@@ -93,125 +136,141 @@ class CountdownTimer:
     def update_font_size(self):
         self.time_label.config(font=("Helvetica", font_size))
         self.start_button.config(font=("Times", font_size))
+    
+    def speak_timer_name_20(self):
+        # Initialize TTS engine
+        engine = pyttsx3.init()
+        engine.say(self.timer_name + "二十秒")
+        engine.runAndWait()
             
+    def speak_timer_name_10(self):
+        # Initialize TTS engine
+        engine = pyttsx3.init()
+        engine.say(self.timer_name + "十秒")
+        engine.runAndWait()
+    
+    def speak_timer_name_5(self):
+        # Initialize TTS engine
+        engine = pyttsx3.init()
+        engine.say(self.timer_name + "五秒")
+        engine.runAndWait()
+        
+    def speak_timer_name_3(self):
+        winsound.PlaySound('10880.wav',winsound.SND_FILENAME)
+        
     def speak_timer_name(self):
         # Initialize TTS engine
         engine = pyttsx3.init()
         engine.say(self.timer_name)
         engine.runAndWait()
     
-    def speak_timer_xiaohua(self):
-        # Initialize TTS engine
-        engine = pyttsx3.init()
-        engine.say("二十秒后"+self.timer_name)
-        engine.runAndWait()
+    def on_press(self, key):
+        self.reset_countdown()
+        self.start_countdown()
     
-    def speak_timer_dici(self):
-        # Initialize TTS engine
-        engine = pyttsx3.init()
-        engine.say("二十秒后第刺")
-        engine.runAndWait()
-
-
-def on_f1_press(event):
-    timer0.reset_countdown()
-    timer0.start_countdown()
-
-def on_f2_press(event):
-    timer1.reset_countdown()
-    timer1.start_countdown()
-
-def on_f3_press(event):
-    timer2.reset_countdown()
-    timer2.start_countdown()
-
-def on_f4_press(event):
-    timer3.reset_countdown()
-    timer3.start_countdown()
-
-def on_f5_press(event):
-    timer4.reset_countdown()
-    timer4.start_countdown()
-
-def on_f6_press(event):
-    timer5.reset_countdown()
-    timer5.start_countdown()
-
-def on_f7_press(event):
-    timer6.reset_countdown()
-    timer6.start_countdown()
-
-def on_f8_press(event):
-    timer7.reset_countdown()
-    timer7.start_countdown()
+    def bind_hotkey(self, hotkey):
+        self.hotkey = hotkey
+        keyboard.on_press_key(hotkey, self.on_press)
     
+    def change_hotkey_window(self):
+        self.hotkey_window = tk.Toplevel(self.root)
+        self.hotkey_window.title(f"修改快捷键{self.timer_name}")
+        self.hotkey_window.lift(self.root)  # Lift the new window above the root window
+
+        hotkey_label = tk.Label(self.hotkey_window, text="输入新快捷键")
+        hotkey_label.pack()
+
+        self.new_hotkey_entry = tk.Entry(self.hotkey_window)
+        self.new_hotkey_entry.pack()
+
+        confirm_button = tk.Button(self.hotkey_window, text="设置", command=self.confirm_hotkey)
+        confirm_button.pack()
+        
+        self.original_hotkey = self.hotkey
+
+    def convert_hotkey(self, new_hotkey):
+        symbol_hotkey = ''.join(num_to_symbol.get(char, char) for char in new_hotkey)
+        return symbol_hotkey
+
+    
+    def confirm_hotkey(self):
+        new_hotkey = self.new_hotkey_entry.get()
+        if new_hotkey in numeric_string:
+            new_hotkey = self.convert_hotkey(new_hotkey)
+        # Unhook the original hotkey if it was set
+        if self.original_hotkey:
+            keyboard.unhook_key(self.original_hotkey)
+
+        # Set the new hotkey and handle the binding
+        self.hotkey = new_hotkey
+        keyboard.on_press_key(new_hotkey, self.on_press)
+        self.original_hotkey = new_hotkey  # Update the original hotkey to the new one
+        self.hotkey_window.destroy()
+
+
+def convert_hotkey(new_hotkey):
+        symbol_hotkey = ''.join(num_to_symbol.get(char, char) for char in new_hotkey)
+        return symbol_hotkey
+
+
 def on_test_press(event):
-    if timer7.is_running == False:
-        timer7.is_running = True
-        timer7.update_clock()
-    elif timer7.is_running == True:
-        timer7.is_running = False
+    for timer in timers:
+        if timer.is_running == True:
+            timer.is_running = False
     
+
 
 if __name__ == '__main__':
     root = tk.Tk()
     #root.overrideredirect(True)
     root.attributes('-topmost', 1)  # 窗口置于顶层
-    root.title('27-3计时器v1.2 作者圈名：七号')
-    #全部烧掉时禁锢小花都可以按了，最开始可以按镰刀，4分钟+冰冻延时差不多就好，第一次禁锢按蛋壳，第二次地刺后30秒回修地板，会因为控被延迟
-    #修地板从持续17秒左右，结束按来得及
-    #控的久可能先地刺再蛋壳
-    '''
-    #改键版本
-    timer0 = CountdownTimer(root, "地刺", 158, 0, 0)
-    timer1 = CountdownTimer(root, "冰冻", 90, 0, 1)
-    timer2 = CountdownTimer(root, "小花", 75, 0, 2)
-    timer3 = CountdownTimer(root, "禁锢", 80, 0, 3)
-    timer4 = CountdownTimer(root, "镰刀", 240, 0, 4)
-    timer5 = CountdownTimer(root, "蛋壳", 240, 0, 5)
-    timer6 = CountdownTimer(root, "修地板", 300, 0, 6)
-    timer7 = CountdownTimer(root, "延迟", 30, 0, 7)
-    keyboard.on_press_key('F1', on_f1_press)
-    keyboard.on_press_key('F2', on_f2_press)
-    keyboard.on_press_key(79, on_f3_press)
-    keyboard.on_press_key(81, on_f4_press)
-    keyboard.on_press_key(71, on_f5_press)
-    keyboard.on_press_key(73, on_f6_press)
-    keyboard.on_press_key(76, on_f7_press)
-    keyboard.on_press_key(78, on_f8_press)
-    '''
-    #非改键版本
-    timer0 = CountdownTimer(root, "地刺", 158, 0, 0)
-    timer1 = CountdownTimer(root, "冰冻", 90, 0, 1)
-    timer2 = CountdownTimer(root, "禁锢", 80, 0, 2)
-    timer3 = CountdownTimer(root, "小花", 75, 0, 3)
-    timer4 = CountdownTimer(root, "镰刀", 240, 0, 4)
-    timer5 = CountdownTimer(root, "蛋壳", 240, 0, 5)
-    timer6 = CountdownTimer(root, "修地板", 300, 0, 6)
-    timer7 = CountdownTimer(root, "延迟", 30, 0, 7)
-    keyboard.on_press_key('F1', on_f1_press)
-    keyboard.on_press_key('F2', on_f2_press)
-    keyboard.on_press_key('F3', on_f3_press)
-    keyboard.on_press_key('F4', on_f4_press)
-    keyboard.on_press_key('F5', on_f5_press)
-    keyboard.on_press_key('F6', on_f6_press)
-    keyboard.on_press_key('F7', on_f7_press)
-    keyboard.on_press_key('F8', on_f8_press)
-    timers = [
-        timer0, timer1, timer2, timer3, timer4, timer5, timer6, timer7
-    ]
-    #keyboard.on_press_key('F9', on_test_press)
+    root.title('27-3计时器v1.3 作者圈名：七号')
+    
+    timers = []
+    # 根据 Excel 数据创建计时器
 
+    index = 0
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        hotkey = str(row[2])  # 假设快捷键在第二列（索引为1）
+        if str(row[2]) in num_to_symbol:
+            hotkey = num_to_symbol[str(row[2])]
+        timer = CountdownTimer(root, str(row[0]), int(row[1]), 0, index, hotkey, int(row[3]), int(row[4]), int(row[5]))
+        timers.append(timer)
+        index+=1
+
+
+
+    '''
+    timer0 = CountdownTimer(root, "7 5 称 号", 60, 0, 0, '$')
+    timer1 = CountdownTimer(root, "斗 志", 120, 0, 1, '%')
+    timer2 = CountdownTimer(root, "5 6 称 号", 30, 0, 2, '&')
+    timer3 = CountdownTimer(root, "超越栏", 20, 0, 3, '*')'''
+    '''
+    timer0_button = tk.Button(root, text="更改快捷键", command=timer0.change_hotkey_window)
+    timer0_button.grid(row=4, column=0)
+
+    timer1_button = tk.Button(root, text="更改快捷键", command=timer1.change_hotkey_window)
+    timer1_button.grid(row=4, column=1)
+
+    timer2_button = tk.Button(root, text="更改快捷键", command=timer2.change_hotkey_window)
+    timer2_button.grid(row=4, column=2)
+    
+    timer3_button = tk.Button(root, text="更改快捷键", command=timer3.change_hotkey_window)
+    timer3_button.grid(row=4, column=3)
+    '''
+    
+    keyboard.on_press_key('-', on_test_press)
+    #keyboard.on_press_key('F9', on_test_press)
 
     #keyboard.add_hotkey('alt+1', on_f2_press)
     #root.bind("<F2>", on_f2_press)
-    test_label = tk.Label(root, text="调整完字体大小后自己调整窗口大小，可以调整到看不到按钮")
-    test_label.grid(row=3, column=0,columnspan=3)
+    test_label = tk.Label(root, text="调整完字体大小后自己调整窗口大小")
+    test_label.grid(row=3, column=0,columnspan=2)
     increase_button = tk.Button(root, text="增加字体大小", command=increase_font_size)
-    increase_button.grid(row=3, column=1, columnspan=6)
+    increase_button.grid(row=3, column=2)
     decrease_button = tk.Button(root, text="减小字体大小", command=decrease_font_size)
-    decrease_button.grid(row=3, column=2, columnspan=6)
+    decrease_button.grid(row=3, column=3)
     #close_button = tk.Button(root, text="关闭", command=close_window)
     #close_button.grid(row=0, column=8, columnspan=6)  # 使用grid布局管理器
-
+    
     root.mainloop()
