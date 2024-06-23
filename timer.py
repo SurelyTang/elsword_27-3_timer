@@ -5,10 +5,16 @@ import threading
 from openpyxl import load_workbook
 import winsound
 
-font_size=10 
+font_size = 10 
 file_path = '计时器配置表.xlsx' 
+vertical_flag = 0
 workbook = load_workbook(file_path)
-sheet = workbook['Sheet1'] # 或者使用 workbook['Sheet1'] 获取特定的工作表
+sheet = workbook.worksheets[0] 
+font_size_flag = sheet.cell(2,7).value
+button_flag = sheet.cell(2,8).value
+vertical_flag = sheet.cell(2,9).value
+if (font_size_flag!=0):
+    font_size = font_size_flag
 
 num_to_symbol = {
     '1': '!',
@@ -21,6 +27,7 @@ num_to_symbol = {
     '8': '*',
     '9': '(',
     '0': ')',
+    "NUM0": 82,
     "NUM1": 79,
     "NUM3": 81,
     "NUM5": 76,
@@ -55,12 +62,16 @@ class CountdownTimer:
         self.remaining_time = tk.StringVar()
         self.initial_seconds = initial_seconds
         self.remaining_seconds = initial_seconds
-
-        self.time_label = tk.Label(root, textvariable=self.remaining_time, font=("Helvetica", font_size))
-        self.time_label.grid(row=row, column=column, padx=10, pady=5)
-
-        self.start_button = tk.Button(root, text=f"重置计时 {timer_name}", command=self.reset_and_start, font=("Times", font_size))
-        self.start_button.grid(row=row+1, column=column, padx=10, pady=5)
+        if (vertical_flag):
+            temp = row
+            row = column
+            column = temp
+        self.time_label = tk.Label(root, textvariable=self.remaining_time, font=("Helvetica", font_size), width=12)
+        self.time_label.grid(row=row, column=column, padx=5, pady=5)
+        
+        if (button_flag == 1):
+            self.start_button = tk.Button(root, text=f"重置计时 {timer_name}", command=self.reset_and_start, font=("Times", font_size))
+            self.start_button.grid(row=row+(1+vertical_flag)%2, column=column+vertical_flag, padx=5, pady=5)
 
         self.is_running = False
         self.timer_id = None
@@ -72,7 +83,7 @@ class CountdownTimer:
         self.flag_10 = flag_10
         self.flag_0 = flag_0
         self.loop = 0
-        if timer_name == "超越栏":
+        if timer_name == "超越栏" or timer_name == "火":
             self.loop = 1
 
     
@@ -112,7 +123,7 @@ class CountdownTimer:
                     tts_thread = threading.Thread(target=self.speak_timer_name_10)
                     tts_thread.start()
                 
-                if self.loop == 1:
+                if self.timer_name == "超越栏":
                     if self.remaining_seconds == 3:
                         tts_thread = threading.Thread(target=self.speak_timer_name_3)
                         tts_thread.start()
@@ -224,53 +235,30 @@ if __name__ == '__main__':
     root = tk.Tk()
     #root.overrideredirect(True)
     root.attributes('-topmost', 1)  # 窗口置于顶层
-    root.title('27-3计时器v1.3 作者圈名：七号')
-    
+    root.title('计时器v1.321 作者圈名：七号')
     timers = []
     # 根据 Excel 数据创建计时器
 
     index = 0
     for row in sheet.iter_rows(min_row=2, values_only=True):
+        if(row[0] == ""):
+            continue
         hotkey = str(row[2])  # 假设快捷键在第二列（索引为1）
         if str(row[2]) in num_to_symbol:
             hotkey = num_to_symbol[str(row[2])]
         timer = CountdownTimer(root, str(row[0]), int(row[1]), 0, index, hotkey, int(row[3]), int(row[4]), int(row[5]))
+        timer.remaining_time.set(f"{str(row[0])}: {str(row[2])}")
         timers.append(timer)
         index+=1
-
-
-
-    '''
-    timer0 = CountdownTimer(root, "7 5 称 号", 60, 0, 0, '$')
-    timer1 = CountdownTimer(root, "斗 志", 120, 0, 1, '%')
-    timer2 = CountdownTimer(root, "5 6 称 号", 30, 0, 2, '&')
-    timer3 = CountdownTimer(root, "超越栏", 20, 0, 3, '*')'''
-    '''
-    timer0_button = tk.Button(root, text="更改快捷键", command=timer0.change_hotkey_window)
-    timer0_button.grid(row=4, column=0)
-
-    timer1_button = tk.Button(root, text="更改快捷键", command=timer1.change_hotkey_window)
-    timer1_button.grid(row=4, column=1)
-
-    timer2_button = tk.Button(root, text="更改快捷键", command=timer2.change_hotkey_window)
-    timer2_button.grid(row=4, column=2)
     
-    timer3_button = tk.Button(root, text="更改快捷键", command=timer3.change_hotkey_window)
-    timer3_button.grid(row=4, column=3)
-    '''
-    
-    keyboard.on_press_key('-', on_test_press)
-    #keyboard.on_press_key('F9', on_test_press)
+    keyboard.on_press_key('F12', on_test_press)
 
-    #keyboard.add_hotkey('alt+1', on_f2_press)
-    #root.bind("<F2>", on_f2_press)
-    test_label = tk.Label(root, text="调整完字体大小后自己调整窗口大小")
-    test_label.grid(row=3, column=0,columnspan=2)
-    increase_button = tk.Button(root, text="增加字体大小", command=increase_font_size)
-    increase_button.grid(row=3, column=2)
-    decrease_button = tk.Button(root, text="减小字体大小", command=decrease_font_size)
-    decrease_button.grid(row=3, column=3)
-    #close_button = tk.Button(root, text="关闭", command=close_window)
-    #close_button.grid(row=0, column=8, columnspan=6)  # 使用grid布局管理器
-    
+    if(font_size_flag == 0 and vertical_flag != 1):
+        test_label = tk.Label(root, text="调整完字体大小后自己调整窗口大小")
+        test_label.grid(row=3, column=0,columnspan=2)
+        increase_button = tk.Button(root, text="增加字体大小", command=increase_font_size)
+        increase_button.grid(row=3, column=2)
+        decrease_button = tk.Button(root, text="减小字体大小", command=decrease_font_size)
+        decrease_button.grid(row=3, column=3)
+
     root.mainloop()
